@@ -1,0 +1,43 @@
+ktor:
+  application:
+    modules:
+      - cn.ts.ApplicationKt.module
+  deployment:
+    port: ${PORT:8080}
+    connectionGroupSize: ${CONNECTION_GROUP_SIZE:2}
+    workerGroupSize: ${WORKER_GROUP_SIZE:5}
+    callGroupSize: ${CALL_GROUP_SIZE:10}
+    shutdownGracePeriod: ${SHUTDOWN_GRACE_PERIOD:2000}
+    shutdownTimeout: ${SHUTDOWN_TIMEOUT:3000}
+
+  development: true
+
+# 数据库配置
+db:
+  url: ${DB_URL:jdbc:postgresql://localhost/default}
+  user: ${DB_USER:username}
+  password: ${DB_PASSWORD:password}
+  driver-name: ${DB_DRIVER:org.postgresql.Driver}
+  pool: ${DB_POOL:20}
+  max-pool: ${DB_MAX_POOL:20}
+  max-lifetime: ${DB_MAX_LIFETIME:60000}
+
+# redis配置
+redis:
+  enable: ${REDIS_ENABLE:false}
+  mode: ${REDIS_MODE:SINGLE}
+  url: ${?REDIS_URL}
+  password: ${?REDIS_PASSWORD}
+  min-idle-size: ${REDIS_MIN_SIZE:24}
+  pool-size: ${REDIS_POOL_SIZE:64}
+  db: ${REDIS_DB:0}
+  timeout: ${REDIS_TIMEOUT:10000}
+
+# mq配置
+mq:
+  enable: ${MQ_ENABLE:false}
+  url: ${?MQ_URL}
+  default-name: ${?MQ_DEFAULT_NAME}
+  thread-poll-size: ${?MQ_THREAD_POLL_SIZE}
+  tls-enable: ${MQ_TLS_ENABLE:false}
+

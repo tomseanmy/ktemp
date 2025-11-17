@@ -8,10 +8,11 @@ group = "cn.ts"
 version = "0.0.1"
 
 application {
-    mainClass = "io.ktor.server.netty.EngineMain"
+    mainClass = "io.ktor.server.cio.EngineMain"
 }
 
 dependencies {
+    implementation(libs.javamoney)
     implementation(libs.ktor.server.rabbitmq)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.websockets)

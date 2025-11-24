@@ -11,7 +11,7 @@ import cn.ts.configure.configureSecurity
 import cn.ts.configure.configureSerialization
 import cn.ts.configure.configureSockets
 import io.ktor.server.application.*
-import io.ktor.server.cio.EngineMain
+import io.ktor.server.netty.EngineMain
 
 fun main(args: Array<String>) {
     EngineMain.main(args)

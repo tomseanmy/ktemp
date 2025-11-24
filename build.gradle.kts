@@ -8,7 +8,7 @@ group = "cn.ts"
 version = "0.0.1"
 
 application {
-    mainClass = "io.ktor.server.cio.EngineMain"
+    mainClass = "io.ktor.server.netty.EngineMain"
 }
 
 dependencies {
@@ -28,7 +28,7 @@ dependencies {
     implementation(libs.exposed.json)
     implementation(libs.exposed.money)
     implementation(libs.exposed.crypt)
-    implementation(libs.exposed.kotlin.datetime)
+    implementation(libs.exposed.java.time)
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.call.id)
     implementation(libs.ktor.server.auth)
@@ -46,7 +46,7 @@ dependencies {
     implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.compression)
     implementation(libs.ktor.server.caching.headers)
-    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
     testImplementation(libs.ktor.server.test.host)

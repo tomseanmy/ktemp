@@ -20,11 +20,13 @@ typealias Id = @Serializable(with = LongAsStringSerializer::class) Long
 /**
  * LocalDateTime类型
  * 在后端使用LocalDateTime类型，但kotlinx serialization无法序列化LocalDateTime类型，所以需要自定义序列化器
+ * @author tomsean
  */
 typealias LDT = @Serializable(with = LocalDateTimeSerializer::class) LocalDateTime
 
 /**
  * LocalDateTime序列化器
+ * @author tomsean
  */
 class LocalDateTimeSerializer : KSerializer<LocalDateTime> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("LocalDateTimeString", PrimitiveKind.STRING)

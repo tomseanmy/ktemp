@@ -1,0 +1,32 @@
+package cn.ts.utils
+
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+
+/**
+ *
+ * @author tomsean
+ */
+object DateUtil
+
+fun LocalDateTime.toInstant(): Instant = this.toInstant(ZoneOffset.of("+8"))
+
+/**
+ * 计算两个日期相差天数
+ * 23.5 小时 = 0 day
+ * @param other
+ * @return 相差天数
+ */
+infix fun LocalDateTime.diffDay(other: LocalDateTime): Long {
+    val duration: Duration = Duration.between(this, other)
+    return duration.toDays()
+}
+
+/**
+ * 计算差值
+ */
+infix fun LocalDateTime.subtract(other: LocalDateTime): Duration {
+    return Duration.between(this, other)
+}

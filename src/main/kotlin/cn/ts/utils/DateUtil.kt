@@ -1,5 +1,6 @@
 package cn.ts.utils
 
+import cn.ts.utils.DateUtil.DEFAULT_ZONE
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
@@ -9,9 +10,13 @@ import java.time.ZoneOffset
  *
  * @author tomsean
  */
-object DateUtil
+object DateUtil {
+    val DEFAULT_ZONE: ZoneOffset = ZoneOffset.of("+8")
+}
 
-fun LocalDateTime.toInstant(): Instant = this.toInstant(ZoneOffset.of("+8"))
+fun LocalDateTime.toInstant(): Instant = this.toInstant(DEFAULT_ZONE)
+
+fun Instant.toLocalDateTime(): LocalDateTime = LocalDateTime.ofInstant(this, DEFAULT_ZONE)
 
 /**
  * 计算两个日期相差天数

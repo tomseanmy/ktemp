@@ -11,8 +11,8 @@ import kotlin.time.toJavaDuration
 object CacheUtil {
     val log: Logger = LoggerFactory.getLogger("CacheUtil.kt")
     val map = mutableMapOf<List<String>, suspend () -> Pair<*, Duration?>>()
-    val CACHE_KEY = "cache"
-    val LOCK_KEY = "_lock"
+    const val CACHE_KEY = "cache"
+    const val LOCK_KEY = "_lock"
 }
 /**
  * 缓存工具，如果未命中缓存，则执行block

@@ -1,5 +1,6 @@
 package cn.ts.utils
 
+import cn.ts.model.Id
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -27,17 +28,15 @@ val json = Json {
  */
 object SerializeUtil
 
-typealias Id = @Serializable(with = IdSerialize::class) Long
-
 class IdSerialize: KSerializer<Id> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("IdString", PrimitiveKind.LONG)
 
     override fun serialize(encoder: Encoder, value: Id) {
-        encoder.encodeString(value.toString())
+        encoder.encodeString(value)
     }
 
     override fun deserialize(decoder: Decoder): Id {
-        return decoder.decodeString().toLong()
+        return decoder.decodeString()
     }
 }
 

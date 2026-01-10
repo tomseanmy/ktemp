@@ -1,5 +1,5 @@
 [versions]
-exposed = "0.61.0"
+exposed = "1.0.0-rc-4"
 kotlin = "2.2.20"
 ktor = "3.3.1"
 ktor-cache = "0.55.3"

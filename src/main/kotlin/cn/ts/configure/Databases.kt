@@ -3,9 +3,9 @@ package cn.ts.configure
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
 import io.ktor.server.config.tryGetString
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.DatabaseConfig
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.DatabaseConfig
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 fun Application.configureDatabases() {
     val dbConfig = environment.config.config("db")

@@ -9,7 +9,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 object CacheUtil {
-    val log: Logger = LoggerFactory.getLogger("CacheUtil.kt")
+    val log: Logger = LoggerFactory.getLogger(javaClass)
     val map = mutableMapOf<List<String>, suspend () -> Pair<*, Duration?>>()
     const val CACHE_KEY = "cache"
     const val LOCK_KEY = "_lock"

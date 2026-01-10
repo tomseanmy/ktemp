@@ -1,7 +1,7 @@
 package cn.ts.tables
 
 import cn.ts.utils.Uuid
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.Table
 
 /**
  * 表主键为uuid

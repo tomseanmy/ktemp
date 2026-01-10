@@ -17,8 +17,10 @@ import io.ktor.server.response.*
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import io.ktor.server.sse.*
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.MissingFieldException
 
+@OptIn(ExperimentalSerializationApi::class)
 fun Application.configureRouting() {
     install(SSE)
     install(RequestValidation) {
@@ -38,9 +40,7 @@ fun Application.configureRouting() {
             call.respond(HttpStatusCode.BadRequest, cause.reasons.joinToString())
         }
         exception<MissingFieldException> { call, cause ->
-            val errMsg = if (cause is JsonConvertException) {
-                "缺少必填字段[${cause.missingFields.joinToString()}]"
-            } else (cause.message ?: "缺少必要字段")
+            val errMsg = "缺少必填字段[${cause.missingFields.joinToString()}]"
             call.respond(HttpStatusCode.BadRequest, errMsg)
         }
         exception<Throwable> { call, cause ->

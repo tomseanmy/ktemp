@@ -30,6 +30,8 @@ exposed-json = { module = "org.jetbrains.exposed:exposed-json", version.ref = "e
 exposed-money = { module = "org.jetbrains.exposed:exposed-money", version.ref = "exposed" }
 exposed-crypt = { module = "org.jetbrains.exposed:exposed-crypt", version.ref = "exposed" }
 exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", version.ref = "exposed" }
+exposed-migration-core = { module = "org.jetbrains.exposed:exposed-migration-core", version.ref = "exposed" }
+exposed-migration-jdbc = { module = "org.jetbrains.exposed:exposed-migration-jdbc", version.ref = "exposed" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktor" }
 ktor-server-call-id = { module = "io.ktor:ktor-server-call-id", version.ref = "ktor" }
 ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }

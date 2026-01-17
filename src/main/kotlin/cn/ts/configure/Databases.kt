@@ -6,6 +6,7 @@ import io.ktor.server.config.tryGetString
 import org.jetbrains.exposed.v1.core.DatabaseConfig
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.migration.jdbc.MigrationUtils
 
 fun Application.configureDatabases() {
     val dbConfig = environment.config.config("db")
@@ -32,6 +33,11 @@ fun Application.configureDatabases() {
     })
     transaction(db) {
         // 自动创建数据表
-        // SchemaUtils.create()
+        val stmts = MigrationUtils.statementsRequiredForDatabaseMigration(
+            // ...tables...
+        )
+        if (stmts.isNotEmpty()) {
+            execInBatch(stmts)
+        }
     }
 }

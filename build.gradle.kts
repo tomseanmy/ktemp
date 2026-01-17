@@ -29,6 +29,8 @@ dependencies {
     implementation(libs.exposed.money)
     implementation(libs.exposed.crypt)
     implementation(libs.exposed.java.time)
+    implementation(libs.exposed.migration.core)
+    implementation(libs.exposed.migration.jdbc)
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.call.id)
     implementation(libs.ktor.server.auth)

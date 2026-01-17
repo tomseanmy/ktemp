@@ -1,6 +1,9 @@
+@file:UseSerializers(LocalDateTimeSerialize::class)
 package cn.ts.tables
 
 import cn.ts.model.*
+import cn.ts.utils.LocalDateTimeSerialize
+import kotlinx.serialization.UseSerializers
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
 

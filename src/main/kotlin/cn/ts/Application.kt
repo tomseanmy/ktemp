@@ -22,7 +22,6 @@ fun Application.module() {
     configureRedisson()
     configureMq()
     configureSockets()
-    configureSerialization()
     configureDatabases()
     configureMonitoring()
     configureSecurity()

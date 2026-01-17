@@ -10,7 +10,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 fun Application.configureDatabases() {
     val dbConfig = environment.config.config("db")
     val url = dbConfig.tryGetString("url")
-    val driver = dbConfig.tryGetString("driver")
+    val driver = dbConfig.tryGetString("driver-name")
     val user = dbConfig.tryGetString("user")
     val password = dbConfig.tryGetString("password")
     val poolSize = dbConfig.tryGetString("pool")?.toInt() ?: 20

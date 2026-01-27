@@ -30,17 +30,8 @@ fun Application.configureHTTP() {
         header("X-Engine", "Ktor") // will send this header with each response
     }
     install(CORS) {
-        allowMethod(HttpMethod.Options)
-        allowMethod(HttpMethod.Put)
-        allowMethod(HttpMethod.Delete)
-        allowMethod(HttpMethod.Patch)
-        allowHeader(HttpHeaders.Authorization)
-        anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
-    }
-    install(CSRF) {
-        allowOrigin("http://localhost:8080")
-        originMatchesHost()
-        checkHeader("X-CSRF-Token")
+        HttpMethod.DefaultMethods.forEach { allowMethod(it) }
+        anyHost()
     }
     install(CachingHeaders) {
         options { call, outgoingContent ->

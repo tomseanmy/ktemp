@@ -1,25 +1,29 @@
-@file:UseSerializers(LocalDateTimeSerialize::class)
 package cn.ts.tables
 
 import cn.ts.model.*
-import cn.ts.utils.LocalDateTimeSerialize
-import kotlinx.serialization.UseSerializers
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
 
 /**
- *
+ * ID列
  * @author tomsean
  */
-
 fun Table.identity(name: String): Column<Id> = registerColumn(name, VarCharColumnType(50, null))
 
 /**
  * 通过ID查询
  */
-fun SIdTable.findById(id: Id): ResultRow? {
+fun SIdTable.byId(id: Id): ResultRow? {
     val table = this
     return selectAll().where { table.id.eq(id) }.firstOrNull()
+}
+
+/**
+ * 判断ID是否存在
+ */
+fun SIdTable.existsById(id: Id): Boolean {
+    val table = this
+    return table.select(table.id).where { table.id.eq(id) }.limit(1).firstOrNull() != null
 }
 
 /**
@@ -28,7 +32,6 @@ fun SIdTable.findById(id: Id): ResultRow? {
 fun SIdTable.exists(block: () -> Op<Boolean>): Boolean {
     return select(id).where(block).limit(1).firstOrNull() != null
 }
-
 
 /**
  * 分页查询

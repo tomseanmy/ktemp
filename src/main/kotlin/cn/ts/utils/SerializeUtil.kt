@@ -3,6 +3,7 @@ package cn.ts.utils
 import cn.ts.model.Id
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -12,6 +13,7 @@ import kotlinx.serialization.json.Json
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 val json = Json {
@@ -23,7 +25,7 @@ val json = Json {
 }
 
 /**
- *
+ * 序列化工具
  * @author tomsean
  */
 object SerializeUtil
@@ -42,7 +44,7 @@ class IdSerialize: KSerializer<Id> {
 
 
 /**
- * 时间序列化
+ * LocalDate日期序列化
  */
 class LocalDateSerialize: KSerializer<LocalDate> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("LocalDateString", PrimitiveKind.STRING)
@@ -57,7 +59,7 @@ class LocalDateSerialize: KSerializer<LocalDate> {
 }
 
 /**
- * 时间序列化
+ * LocalDateTime时间序列化
  */
 class LocalDateTimeSerialize: KSerializer<LocalDateTime> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("LocalDateTimeString", PrimitiveKind.STRING)
@@ -68,6 +70,21 @@ class LocalDateTimeSerialize: KSerializer<LocalDateTime> {
 
     override fun deserialize(decoder: Decoder): LocalDateTime {
         return LocalDateTime.parse(decoder.decodeString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    }
+}
+
+/**
+ * 带时区时间序列化
+ */
+class OffsetDateTimeSerializer: KSerializer<OffsetDateTime> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("OffsetDateTimeString", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: OffsetDateTime) {
+        encoder.encodeString(value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+    }
+
+    override fun deserialize(decoder: Decoder): OffsetDateTime {
+        return OffsetDateTime.parse(decoder.decodeString(), DateTimeFormatter.ISO_OFFSET_DATE_TIME)
     }
 }
 
@@ -86,9 +103,9 @@ class BigDecimalSerialize: KSerializer<BigDecimal> {
     }
 }
 
-fun String.isJson(): Boolean {
+inline fun <reified T: Any> String.isJson(block: (T) -> Unit): Boolean {
     return try {
-        json.parseToJsonElement(this)
+        block(json.decodeFromString(this))
         true
     } catch (_: Exception) {
         false

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "cn.ts"
-version = "0.0.1"
+version = project.properties["app.version"] as String
 
 application {
     mainClass = "io.ktor.server.netty.EngineMain"

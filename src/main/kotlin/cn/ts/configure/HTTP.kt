@@ -27,7 +27,7 @@ fun Application.configureHTTP() {
     install(ForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
     install(XForwardedHeaders) // WARNING: for security, do not include this if not behind a reverse proxy
     install(DefaultHeaders) {
-        header("X-Engine", "Ktor") // will send this header with each response
+        //header("X-Engine", "Ktor") // will send this header with each response
     }
     install(CORS) {
         HttpMethod.DefaultMethods.forEach { allowMethod(it) }

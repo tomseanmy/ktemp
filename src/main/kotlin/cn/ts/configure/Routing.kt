@@ -2,6 +2,7 @@ package cn.ts.configure
 
 import cn.ts.exception.AuthenticationException
 import cn.ts.exception.ForbiddenException
+import cn.ts.model.R
 import cn.ts.utils.Validatable
 import cn.ts.utils.json
 import io.ktor.http.*
@@ -19,9 +20,11 @@ import io.ktor.server.routing.*
 import io.ktor.server.sse.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.MissingFieldException
+import org.slf4j.LoggerFactory
 
 @OptIn(ExperimentalSerializationApi::class)
 fun Application.configureRouting() {
+    val log = LoggerFactory.getLogger("Routing")
     install(SSE)
     install(RequestValidation) {
         validate<Validatable> { it.validate() }
@@ -30,21 +33,27 @@ fun Application.configureRouting() {
         json(json)
     }
     install(StatusPages) {
+        status(HttpStatusCode.Unauthorized) { call, cause ->
+            log.error("认证异常", cause)
+            call.respond(HttpStatusCode.Unauthorized, R.err<String>(msg = "请先登录"))
+        }
         exception<AuthenticationException> { call, cause ->
-            call.respond(HttpStatusCode.Unauthorized, cause.message ?: "")
+            log.error("认证异常", cause)
+            call.respond(HttpStatusCode.Unauthorized, R.err<String>(msg = cause.message ?: ""))
         }
         exception<ForbiddenException> { call, cause ->
-            call.respond(HttpStatusCode.Forbidden, cause.message ?: "")
+            call.respond(HttpStatusCode.Forbidden, R.err<String>(msg = cause.message ?: ""))
         }
         exception<RequestValidationException> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, cause.reasons.joinToString())
+            log.error("参数错误", cause)
+            call.respond(HttpStatusCode.BadRequest, R.err<String>(msg = cause.reasons.joinToString()))
         }
         exception<MissingFieldException> { call, cause ->
             val errMsg = "缺少必填字段[${cause.missingFields.joinToString()}]"
-            call.respond(HttpStatusCode.BadRequest, errMsg)
+            call.respond(HttpStatusCode.BadRequest, R.err<String>(msg = errMsg))
         }
         exception<Throwable> { call, cause ->
-            call.respond(HttpStatusCode.InternalServerError, cause.message ?: "服务器异常")
+            call.respond(HttpStatusCode.InternalServerError, R.err<String>(msg = cause.message ?: "服务器异常"))
         }
     }
     routing {

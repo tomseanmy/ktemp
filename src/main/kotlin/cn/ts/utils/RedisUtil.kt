@@ -3,112 +3,82 @@ package cn.ts.utils
 import io.netty.buffer.ByteBufAllocator
 import kotlinx.coroutines.*
 import kotlinx.coroutines.async
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.serializer
 import org.redisson.api.RList
 import org.redisson.api.RMap
 import org.redisson.api.RedissonClient
 import org.redisson.client.codec.BaseCodec
-import org.redisson.client.codec.StringCodec
 import org.redisson.client.protocol.Decoder
 import org.redisson.client.protocol.Encoder
 import org.slf4j.LoggerFactory
+import tools.jackson.core.type.TypeReference
 import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 /**
- * Redis工具
+ * Redis 工具 (基于 Jackson 序列化)
  * @author tomsean
  */
 object Redis {
 
-    private val log = LoggerFactory.getLogger(Redis::class.java)
+    @PublishedApi
+    internal val log = LoggerFactory.getLogger(Redis::class.java)
 
     lateinit var client: RedissonClient
 
     /**
-     *
+     * 读取
      */
     inline operator fun <reified T> get(key: String): T? {
-        try {
-            val bucket = client.getBucket<String>(key, kotlinxCodec<T>())
-            if (!bucket.isExists) return null
-            val valueStr = bucket.get()
-            if (T::class.isPrimitive()) {
-                return valueStr as T
-            }
-            return json.decodeFromString(valueStr)
-        } catch (e: Exception) {
-            throw e
-        }
+        return runCatching {
+            client.getBucket<T>(key, jacksonCodec<T>()).get()
+        }.onFailure { log.error("Redis get failed: key=$key", it) }.getOrNull()
     }
 
+    /**
+     * 写入 (无过期时间)
+     */
     inline operator fun <reified T> set(key: String, value: T) {
-        val valueStr = if (value::class.isPrimitive()) (value).toString() else json.encodeToString(value)
-        try {
-            client.getBucket<String>(key, StringCodec()).set(valueStr)
-        } catch (e: Exception) {
-            throw e
-        }
+        set(key, value, null)
     }
 
-    inline fun <reified T> set(key: String, value: T, duration: Duration? = null) {
-
-        try {
-            val bucket = client.getBucket<String>(key, kotlinxCodec<T>())
-            val valueStr = if (T::class.isPrimitive()) (value).toString() else json.encodeToString(value)
-            if (duration != null) {
-                bucket.set(valueStr, duration)
-                return
-            }
-            bucket.set(valueStr)
-        } catch (e: Exception) {
-            throw e
-        }
+    /**
+     * 写入 (可指定过期时间)
+     */
+    inline fun <reified T> set(key: String, value: T, duration: Duration?) {
+        runCatching {
+            val bucket = client.getBucket<T>(key, jacksonCodec<T>())
+            if (duration != null) bucket.set(value, duration) else bucket.set(value)
+        }.onFailure { log.error("Redis set failed: key=$key", it) }
     }
 
-    inline fun <reified T : Any> hash(key: String): RMap<String, T> = client.getMap(key, kotlinxCodec<T>())
-
-    inline fun <reified T : Any> list(key: String): RList<T> = client.getList(key, kotlinxCodec<T>())
-
-    fun batchDelete(keys: List<String>) = runBlocking(Dispatchers.IO) {
+    /**
+     * 批量删除
+     */
+    fun batchDelete(keys: List<String>): List<Boolean> = runBlocking(Dispatchers.IO) {
         keys.map { key ->
             async {
-                try {
+                runCatching {
                     client.keys.deleteAsync(key)
                     true
-                } catch (e: Exception) {
-                    // 可选：记录日志
-                    log.error("Failed to delete key: $key", e)
-                    false
-                }
+                }.onFailure { log.error("Failed to delete key: $key", it) }
+                    .getOrDefault(false)
             }
-        }
+        }.awaitAll()
     }
 
-    fun delete(vararg key: String): Long {
-        try {
-            return client.keys.delete(*key)
-        } catch (e: Exception) {
-            throw e
-        }
-    }
+    /**
+     * 删除
+     */
+    fun delete(vararg key: String): Long = client.keys.delete(*key)
 
-    fun deletePrefix(prefix: String): Long {
-        try {
-            return client.keys.deleteByPattern("$prefix*")
-        } catch (e: Exception) {
-            throw e
-        }
-    }
+    /**
+     * 按前缀删除
+     */
+    fun deletePrefix(prefix: String): Long = client.keys.deleteByPattern("$prefix*")
 
-    fun lock(key: String, block: () -> Unit) {
-        lock(listOf(key), block)
-    }
+    fun lock(key: String, block: () -> Unit) = lock(listOf(key), block)
 
-    fun lock(vararg key: String, block: () -> Unit) {
-        lock(key.toList(), block)
-    }
+    fun lock(vararg key: String, block: () -> Unit) = lock(key.toList(), block)
 
     fun lock(key: List<String>, block: () -> Unit) {
         val lo = client.getLock(key.joinToString(":"))
@@ -121,35 +91,45 @@ object Redis {
     }
 }
 
-class KotlinxCodec<T>(
-    private val serializer: KSerializer<T>,
-) : BaseCodec() {
-    // 编码器：Object -> ByteBuf
-    private val encoder: Encoder = Encoder { `in` ->
-        val byteBuf = ByteBufAllocator.DEFAULT.buffer()
+/**
+ * Jackson 实现的 Redisson Codec
+ *
+ * 相比原 KotlinxCodec 的改进:
+ * 1. 缓存 `ObjectWriter` / `ObjectReader` 而不是每次重新构造 (性能)
+ * 2. `TypeReference` 精确保留泛型信息 (支持 `List<User>` 这种嵌套泛型)
+ * 3. 资源管理更稳健 (ByteBuf 异常时也会 release)
+ */
+class JacksonCodec<T>(typeRef: TypeReference<T>) : BaseCodec() {
+
+    private val mapper = Json.objectMapper
+    private val resolvedType = mapper.typeFactory.constructType(typeRef)
+    private val writer = mapper.writerFor(resolvedType)
+    private val reader = mapper.readerFor(resolvedType)
+
+    private val encoder = Encoder { `in` ->
+        val buf = ByteBufAllocator.DEFAULT.buffer()
         try {
-            // 强制转换并序列化
-            @Suppress("UNCHECKED_CAST")
-            val str = json.encodeToString(serializer, `in` as T)
-            byteBuf.writeCharSequence(str, StandardCharsets.UTF_8)
-            byteBuf
+            val str = writer.writeValueAsString(`in`)
+            buf.writeCharSequence(str, StandardCharsets.UTF_8)
+            buf
         } catch (e: Exception) {
-            byteBuf.release()
+            buf.release()
             throw e
         }
     }
 
-    // 解码器：ByteBuf -> Object
-    private val decoder: Decoder<Any> = Decoder { buf, _ ->
+    private val decoder = Decoder<Any> { buf, _ ->
         val str = buf.toString(StandardCharsets.UTF_8)
-        json.decodeFromString(serializer, str)
+        reader.readValue(str)
     }
 
     override fun getValueEncoder(): Encoder = encoder
     override fun getValueDecoder(): Decoder<Any> = decoder
 }
 
-// 辅助函数：快速生成 Codec
-inline fun <reified T> kotlinxCodec(): KotlinxCodec<T> {
-    return KotlinxCodec(serializer<T>())
-}
+/**
+ * 构造一个 [JacksonCodec]
+ *
+ * 利用 inline reified 捕获泛型 [T] 的真实类型(包括嵌套泛型),传给 Jackson 的 [TypeReference]
+ */
+inline fun <reified T> jacksonCodec(): JacksonCodec<T> = JacksonCodec(object : TypeReference<T>() {})

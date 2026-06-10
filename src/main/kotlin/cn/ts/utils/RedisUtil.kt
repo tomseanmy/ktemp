@@ -1,10 +1,7 @@
 package cn.ts.utils
 
 import io.netty.buffer.ByteBufAllocator
-import kotlinx.coroutines.*
-import kotlinx.coroutines.async
-import org.redisson.api.RList
-import org.redisson.api.RMap
+import kotlinx.coroutines.future.asDeferred
 import org.redisson.api.RedissonClient
 import org.redisson.client.codec.BaseCodec
 import org.redisson.client.protocol.Decoder
@@ -15,7 +12,12 @@ import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 /**
- * Redis 工具 (基于 Jackson 序列化)
+ * Redis 工具 (基于 Jackson 序列化,真非阻塞协程)
+ *
+ * 走 Redisson 的 `*Async` API (内部是 Netty 事件循环 + Lua 脚本 + Pub/Sub),
+ * 拿到 `RFuture` 后用 `kotlinx-coroutines-jdk8` 的 `CompletionStage.await()`
+ * 挂起协程等回调 —— 整个等待期间不占任何调度器线程。
+ *
  * @author tomsean
  */
 object Redis {
@@ -28,65 +30,59 @@ object Redis {
     /**
      * 读取
      */
-    inline operator fun <reified T> get(key: String): T? {
-        return runCatching {
-            client.getBucket<T>(key, jacksonCodec<T>()).get()
-        }.onFailure { log.error("Redis get failed: key=$key", it) }.getOrNull()
+    suspend fun <T> get(key: String, codec: JacksonCodec<T>): T? = try {
+        client.getBucket<T>(key, codec).getAsync().asDeferred().await()
+    } catch (e: Exception) {
+        log.error("Redis get failed: key=$key", e)
+        null
     }
 
     /**
      * 写入 (无过期时间)
      */
-    inline operator fun <reified T> set(key: String, value: T) {
-        set(key, value, null)
+    suspend fun <T> set(key: String, value: T, codec: JacksonCodec<T>) {
+        set(key, value, null, codec)
     }
 
     /**
      * 写入 (可指定过期时间)
      */
-    inline fun <reified T> set(key: String, value: T, duration: Duration?) {
-        runCatching {
-            val bucket = client.getBucket<T>(key, jacksonCodec<T>())
-            if (duration != null) bucket.set(value, duration) else bucket.set(value)
-        }.onFailure { log.error("Redis set failed: key=$key", it) }
+    suspend fun <T> set(key: String, value: T, duration: Duration?, codec: JacksonCodec<T>) {
+        try {
+            val bucket = client.getBucket<T>(key, codec)
+            val future = if (duration != null) bucket.setAsync(value, duration) else bucket.setAsync(value)
+            future.asDeferred().await()
+        } catch (e: Exception) {
+            log.error("Redis set failed: key=$key", e)
+        }
     }
 
     /**
-     * 批量删除
+     * 删除一个或多个 key,返回实际删除的条数
      */
-    fun batchDelete(keys: List<String>): List<Boolean> = runBlocking(Dispatchers.IO) {
-        keys.map { key ->
-            async {
-                runCatching {
-                    client.keys.deleteAsync(key)
-                    true
-                }.onFailure { log.error("Failed to delete key: $key", it) }
-                    .getOrDefault(false)
-            }
-        }.awaitAll()
+    suspend fun delete(vararg key: String): Long = try {
+        client.keys.deleteAsync(*key).asDeferred().await()
+    } catch (e: Exception) {
+        log.error("Redis delete failed: keys=${key.toList()}", e)
+        0L
     }
 
     /**
-     * 删除
+     * 协程安全的分布式锁 —— `RLockAsync.lockAsync()` 走 Netty 事件循环,
+     * 等待期间不占 Kotlin 调度器线程
      */
-    fun delete(vararg key: String): Long = client.keys.delete(*key)
+    suspend fun lock(key: String, block: suspend () -> Unit) = lock(listOf(key), block)
 
-    /**
-     * 按前缀删除
-     */
-    fun deletePrefix(prefix: String): Long = client.keys.deleteByPattern("$prefix*")
+    suspend fun lock(vararg key: String, block: suspend () -> Unit) = lock(key.toList(), block)
 
-    fun lock(key: String, block: () -> Unit) = lock(listOf(key), block)
-
-    fun lock(vararg key: String, block: () -> Unit) = lock(key.toList(), block)
-
-    fun lock(key: List<String>, block: () -> Unit) {
+    suspend fun lock(key: List<String>, block: suspend () -> Unit) {
         val lo = client.getLock(key.joinToString(":"))
         try {
-            lo.lock()
+            lo.lockAsync().asDeferred().await()
             block()
         } finally {
-            lo.unlock()
+            runCatching { lo.unlockAsync().asDeferred().await() }
+                .onFailure { log.error("Redis unlock failed: key=${key.joinToString(":")}", it) }
         }
     }
 }
@@ -133,3 +129,20 @@ class JacksonCodec<T>(typeRef: TypeReference<T>) : BaseCodec() {
  * 利用 inline reified 捕获泛型 [T] 的真实类型(包括嵌套泛型),传给 Jackson 的 [TypeReference]
  */
 inline fun <reified T> jacksonCodec(): JacksonCodec<T> = JacksonCodec(object : TypeReference<T>() {})
+
+/**
+ * reified 便捷入口 —— 跟 `get(key, jacksonCodec<T>())` 等价
+ */
+suspend inline fun <reified T> Redis.get(key: String): T? = Redis.get(key, jacksonCodec<T>())
+
+/**
+ * reified 便捷入口 —— 跟 `set(key, value, null, jacksonCodec<T>())` 等价
+ */
+suspend inline fun <reified T> Redis.set(key: String, value: T) =
+    Redis.set(key, value, null, jacksonCodec<T>())
+
+/**
+ * reified 便捷入口 —— 跟 `set(key, value, duration, jacksonCodec<T>())` 等价
+ */
+suspend inline fun <reified T> Redis.set(key: String, value: T, duration: Duration) =
+    Redis.set(key, value, duration, jacksonCodec<T>())

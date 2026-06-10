@@ -2,7 +2,6 @@ package cn.ts
 
 import cn.ts.configure.configureDI
 import cn.ts.configure.configureDatabases
-import cn.ts.configure.configureMq
 import cn.ts.configure.configureHTTP
 import cn.ts.configure.configureMonitoring
 import cn.ts.configure.configureRedisson
@@ -19,7 +18,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     configureDI()
     configureRedisson()
-    configureMq()
+    // configureMq()  // TODO: 接入 MQ 时补 Mq.kt + 加依赖
     configureSockets()
     configureDatabases()
     configureMonitoring()

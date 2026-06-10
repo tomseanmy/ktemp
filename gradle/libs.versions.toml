@@ -9,6 +9,7 @@ koin = "4.1.1"
 javamoney = "1.4.5"
 jackson = "3.1.3"
 slf4j = "2.0.18"
+coroutines = "1.10.2"
 
 [libraries]
 javamoney = { module = "org.javamoney:moneta", version.ref = "javamoney" }
@@ -28,6 +29,8 @@ exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", versio
 exposed-migration-core = { module = "org.jetbrains.exposed:exposed-migration-core", version.ref = "exposed" }
 exposed-migration-jdbc = { module = "org.jetbrains.exposed:exposed-migration-jdbc", version.ref = "exposed" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "coroutines" }
 
 jackson-core = { module = "tools.jackson.core:jackson-core", version.ref = "jackson" }
 jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }

@@ -25,6 +25,7 @@ dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.hikari)
     implementation(libs.redisson)
+    implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.postgresql)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)

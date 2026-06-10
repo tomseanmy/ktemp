@@ -63,7 +63,7 @@ suspend fun refreshCache(
  * 删除缓存
  * @author tomsean
  */
-fun invalidCache(vararg key: String) {
+suspend fun invalidCache(vararg key: String) {
     Redis.lock(CACHE_KEY, LOCK_KEY, *key) {
         Redis.delete(listOf(CACHE_KEY, *key).joinToString(":"))
     }

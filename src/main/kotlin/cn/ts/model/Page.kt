@@ -59,7 +59,7 @@ fun ApplicationCall.usePager(): Pager {
             else -> size
         },
         sorts = sortsNode?.properties()?.asSequence()?.associate { (key, node) ->
-            key to SortOrder.valueOf(node.asText())
+            key to SortOrder.valueOf(node.stringValue())
         } ?: emptyMap()
     )
 }
